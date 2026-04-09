@@ -92,6 +92,15 @@ const Hero = memo(({isDrawerOpen, onOpenDrawer}: HeroProps) => {
     }
   }, [navigation, hero?.link, provider.value, heroData]);
 
+  const handleDetailsPress = useCallback(() => {
+    if (hero?.link) {
+      navigation.navigate('Info', {
+        link: hero.link,
+        provider: provider.value,
+      });
+    }
+  }, [navigation, hero?.link, provider.value]);
+
   const handleImageError = useCallback(() => {
     // Handle image error silently - React Query will manage retries
     console.warn('Hero image failed to load');
@@ -122,6 +131,21 @@ const Hero = memo(({isDrawerOpen, onOpenDrawer}: HeroProps) => {
     return (heroData.genre || heroData.tags || []).slice(0, 3);
   }, [heroData]);
 
+  const metaBadges = React.useMemo(() => {
+    if (!heroData) {
+      return [];
+    }
+
+    const badgeCandidates = [
+      heroData.releaseInfo || heroData.year,
+      heroData.type ? String(heroData.type).toUpperCase() : undefined,
+      heroData.runtime,
+      heroData.imdbRating ? `⭐ ${heroData.imdbRating}` : undefined,
+    ];
+
+    return badgeCandidates.filter(Boolean).slice(0, 3);
+  }, [heroData]);
+
   if (error) {
     console.error('Hero metadata error:', error);
   }
@@ -138,7 +162,7 @@ const Hero = memo(({isDrawerOpen, onOpenDrawer}: HeroProps) => {
                 : 'opacity-0'
             }`}>
             <Pressable
-              className={`${isDrawerOpen ? 'opacity-0' : 'opacity-100'}`}
+              className={`${isDrawerOpen ? 'opacity-0' : 'opacity-100'} bg-black/35 rounded-full p-2`}
               onPress={onOpenDrawer}>
               <Ionicons name="menu-sharp" size={27} color="white" />
             </Pressable>
@@ -154,14 +178,16 @@ const Hero = memo(({isDrawerOpen, onOpenDrawer}: HeroProps) => {
               autoFocus={true}
               onSubmitEditing={e => handleSearchSubmit(e.nativeEvent.text)}
               placeholder={`Search in ${provider.display_name}`}
-              className="w-[95%] px-4 h-10 rounded-full border-white border"
+              className="w-[95%] px-4 h-11 rounded-full border-white/40 border bg-black/35 text-white"
               placeholderTextColor="#999"
             />
           </Animated.View>
         )}
 
         {!searchActive && (
-          <Pressable onPress={() => setSearchActive(true)}>
+          <Pressable
+            className="bg-black/35 rounded-full p-2"
+            onPress={() => setSearchActive(true)}>
             <Feather name="search" size={24} color="white" />
           </Pressable>
         )}
@@ -200,13 +226,35 @@ const Hero = memo(({isDrawerOpen, onOpenDrawer}: HeroProps) => {
               </Text>
             )}
 
+            {heroData.description && (
+              <Text
+                numberOfLines={2}
+                className="text-gray-200 text-center text-sm px-2">
+                {heroData.description}
+              </Text>
+            )}
+
+            {metaBadges.length > 0 && (
+              <View className="flex-row flex-wrap items-center justify-center gap-2">
+                {metaBadges.map((badge, index) => (
+                  <View
+                    key={`${badge}-${index}`}
+                    className="bg-white/15 border border-white/20 rounded-full px-3 py-1">
+                    <Text className="text-white text-xs font-semibold">
+                      {badge}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Genres */}
             {displayGenres.length > 0 && (
-              <View className="flex-row items-center justify-center space-x-2">
+              <View className="flex-row items-center justify-center flex-wrap px-4">
                 {displayGenres.map((genre: string, index: number) => (
                   <Text
                     key={index}
-                    className="text-white text-sm font-semibold">
+                    className="text-white/90 text-sm font-semibold mx-1">
                     • {genre}
                   </Text>
                 ))}
@@ -214,14 +262,24 @@ const Hero = memo(({isDrawerOpen, onOpenDrawer}: HeroProps) => {
             )}
 
             {/* Play Button */}
-            <View className="flex-1 items-center justify-center">
+            <View className="flex-row items-center justify-center gap-3">
               {hero?.link && (
                 <TouchableOpacity
-                  className="bg-white px-10 py-2 rounded-lg flex-row items-center space-x-2"
+                  className="bg-white px-8 py-2 rounded-xl flex-row items-center space-x-2"
                   onPress={handlePlayPress}
                   activeOpacity={0.8}>
                   <FontAwesome6 name="play" size={20} color="black" />
                   <Text className="text-black font-bold text-lg">Play</Text>
+                </TouchableOpacity>
+              )}
+              {hero?.link && (
+                <TouchableOpacity
+                  className="bg-white/10 border border-white/30 px-6 py-2 rounded-xl"
+                  onPress={handleDetailsPress}
+                  activeOpacity={0.8}>
+                  <Text className="text-white font-semibold text-base">
+                    Details
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
